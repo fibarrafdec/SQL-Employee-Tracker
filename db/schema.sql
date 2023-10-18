@@ -1,3 +1,8 @@
+DROP DATABASE IF EXISTS alldata_db;
+CREATE DATABASE alldata_db;
+
+USE alldata_db;
+
 CREATE TABLE department (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(30)
