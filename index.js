@@ -19,13 +19,6 @@ function displayMainMenu() {
         'Add a role',
         'Add an employee',
         'Update an employee role',
-        'View employees by manager',
-        'View employees by department',
-        'Update employee manager',
-        'Delete a department',
-        'Delete a role',
-        'Delete an employee',
-        'View total utilized budget of a department',
         'Exit',
       ],
     })
@@ -52,15 +45,6 @@ function displayMainMenu() {
         case 'Update an employee role':
           updateEmployeeRole();
           break;
-        case 'View employees by manager':
-          viewEmployeesByManager();
-          break;
-        case 'View employees by department':
-          viewEmployeesByDepartment();
-          break;
-        case 'Update employee manager':
-          updateEmployeeManager();
-          break;
         case 'Delete a department':
           deleteDepartment();
           break;
@@ -75,9 +59,61 @@ function displayMainMenu() {
           break;
         case 'Exit':
           console.log('Goodbye!');
-          sequelize.end();
+          sequelize.close(); // Use close instead of end
           break;
       }
+    });
+}
+
+// Function to view all departments
+function viewAllDepartments() {
+  departmentFunctions.getAllDepartments().then(([departments]) => {
+    console.table(departments);
+    displayMainMenu();
+  });
+}
+
+// Function to view all roles
+function viewAllRoles() {
+  roleFunctions
+    .getAllRoles()
+    .then((roles) => {
+      if (roles.length === 0) {
+        console.log('No roles found.');
+      } else {
+        console.table(roles);
+      }
+      displayMainMenu();
+    })
+    .catch((error) => {
+      console.error('Error retrieving roles:', error);
+      displayMainMenu();
+    });
+}
+
+// Function to view all employees
+function viewAllEmployees() {
+  employeeFunctions.getAllEmployees().then(([employees]) => {
+    console.table(employees);
+    displayMainMenu();
+  });
+}
+
+// Function to add a department
+function addDepartment() {
+  inquirer
+    .prompt([
+      {
+        type: 'input',
+        name: 'name',
+        message: 'Enter the name of the department:',
+      },
+    ])
+    .then((answers) => {
+      departmentFunctions.createDepartment(answers.name).then(() => {
+        console.log('Department added!');
+        displayMainMenu();
+      });
     });
 }
 
@@ -135,10 +171,12 @@ function addEmployee() {
       },
     ])
     .then((answers) => {
-      employeeFunctions.createEmployee(answers.first_name, answers.last_name, answers.role_id, answers.manager_id).then(() => {
-        console.log('Employee added!');
-        displayMainMenu();
-      });
+      employeeFunctions
+        .createEmployee(answers.first_name, answers.last_name, answers.role_id, answers.manager_id)
+        .then(() => {
+          console.log('Employee added!');
+          displayMainMenu();
+        });
     });
 }
 
@@ -160,81 +198,6 @@ function updateEmployeeRole() {
     .then((answers) => {
       employeeFunctions.updateEmployeeRole(answers.employee_id, answers.new_role_id).then(() => {
         console.log('Employee role updated!');
-        displayMainMenu();
-      });
-    });
-}
-
-// Function to view employees by manager
-function viewEmployeesByManager() {
-  inquirer
-    .prompt([
-      {
-        type: 'input',
-        name: 'manager_id',
-        message: 'Enter the manager ID to view their direct reports:',
-      },
-    ])
-    .then((answers) => {
-      const managerId = parseInt(answers.manager_id);
-      employeeFunctions.getEmployeesByManager(managerId).then(([rows]) => {
-        if (rows.length === 0) {
-          console.log('No employees found for the provided manager ID.');
-        } else {
-          console.table(rows);
-        }
-        displayMainMenu();
-      });
-    });
-}
-
-// Function to view employees by department
-function viewEmployeesByDepartment() {
-  departmentFunctions.getAllDepartments().then(([departments]) => {
-    inquirer
-      .prompt([
-        {
-          type: 'list',
-          name: 'department_id',
-          message: 'Select a department to view its employees:',
-          choices: departments.map((department) => ({
-            name: department.name,
-            value: department.id,
-          })),
-        },
-      ])
-      .then((answers) => {
-        const departmentId = answers.department_id;
-        employeeFunctions.getEmployeesByDepartment(departmentId).then(([rows]) => {
-          if (rows.length === 0) {
-            console.log('No employees found for the selected department.');
-          } else {
-            console.table(rows);
-          }
-          displayMainMenu();
-        });
-      });
-  });
-}
-
-// Function to update an employee's manager
-function updateEmployeeManager() {
-  inquirer
-    .prompt([
-      {
-        type: 'input',
-        name: 'employee_id',
-        message: 'Enter the ID of the employee to update:',
-      },
-      {
-        type: 'input',
-        name: 'new_manager_id',
-        message: 'Enter the new manager ID for the employee:',
-      },
-    ])
-    .then((answers) => {
-      employeeFunctions.updateEmployeeManager(answers.employee_id, answers.new_manager_id).then(() => {
-        console.log('Employee manager updated!');
         displayMainMenu();
       });
     });
@@ -324,7 +287,8 @@ function viewBudgetByDepartment() {
 }
 
 // Start the application
-sequelize.authenticate()
+sequelize
+  .authenticate()
   .then(() => {
     console.log('Connected to the database.');
     displayMainMenu();
